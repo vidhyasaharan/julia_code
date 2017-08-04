@@ -1,10 +1,22 @@
-mutable struct gaussian{T<:AbstractFloat}
-  ndim::Int64
-  mean::Array{T,1}
-  cov::Array{T,2}
+using Speechbox
+using GMMbox
+
+
+
+ffile = "/home/vidhya/work/workspace/swb_mfcc/sw_20001_A_1.mfc";
+data = read_binary(ffile);
+
+#=
+function fit_gaussian(data::Matrix{AbstractFloat})
+  ndim = size(data,1);
+  gauss = gaussian(ndim,vec(mean(data,2)),cov(data,2));
+  return gauss
 end
 
-gaussian(ndim::Integer) = gaussian(ndim::Integer,zeros(ndim),eye(ndim))
 
+function dmean(data::Array{Float64,2})
+  return mean(data,2);
+end
 
-using Speechbox
+g1 = fit_gaussian(data);
+=#
