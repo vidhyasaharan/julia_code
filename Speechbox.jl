@@ -3,7 +3,31 @@ module Speechbox
 using WAV
 using DSP
 
-export specgram, enframe, mel2frq, frq2mel, melbankm, melfcc, vad, normalise_energy, write_binary, read_binary
+export specgram, enframe, mel2frq, frq2mel, melbankm, melfcc, vad, normalise_energy, write_binary, read_binary, combine_binary
+
+function combine_binary(ofile,flist)
+  if(isempty(flist))
+    return nothing
+  end
+  data = read_binary(flist[1]);
+  ndim,nvec = size(data);
+  f = open(ofile,"w");
+  write(f,ndim);
+  write(f,nvec);
+  write(f,data[:]);
+  if(length(flist)>1)
+    for i=2:length(flist)
+      data = read_binary(flist[i]);
+      nvec += size(data,2);
+      write(f,data[:]);
+    end
+    seekstart(f);
+    write(f,ndim);
+    write(f,nvec);
+    close(f);
+  end
+  return nothing
+end
 
 function read_binary(ofile)
   f = open(ofile,"r");
