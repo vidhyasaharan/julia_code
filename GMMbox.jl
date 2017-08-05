@@ -11,8 +11,9 @@ mutable struct gaussian{T<:AbstractFloat}
 end
 
 gaussian(ndim::Integer) = gaussian(ndim::Integer,zeros(ndim),eye(ndim))
-gaussian(data::Matrix{Float64}) = gaussian(size(data,1),mean(data,2),cov(data,2))
-gaussian(data::Matrix{Float32}) = gaussian(size(data,1),mean(data,2),cov(data,2))
+gaussian(data::Matrix{T} where T<:AbstractFloat)  = gaussian(size(data,1),mean(data,2),cov(data,2))
+#gaussian(data::Matrix{Float64}) = gaussian(size(data,1),mean(data,2),cov(data,2))
+#gaussian(data::Matrix{Float32}) = gaussian(size(data,1),mean(data,2),cov(data,2))
 
 function logprob!(p::Matrix{T},g::gaussian{T},data::Matrix{T}) where T <: AbstractFloat
   ndim = size(data,1);
