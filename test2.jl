@@ -32,7 +32,7 @@ end
 println(nprocs())
 
 function run_ex_mfcc(wav_flist)
-  @sync @parallel for i=1:1000
+  @sync @parallel for i=1:10000
     ex_mfcc(wav_flist[i]);
   end
   return nothing
