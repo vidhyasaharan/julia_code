@@ -2,7 +2,8 @@ using Speechbox
 using GMMbox
 #using Distances
 #using PyPlot
-using Distributions
+#using Distributions
+#using Clustering
 
 fpath = "/home/vidhya/work/workspace/swb_mfcc";
 mfc_flist = filter(x->endswith(x,".mfc"),readdir(fpath));
@@ -22,11 +23,11 @@ d1 = read_binary(flist[end]);
 data = convert(Matrix{Float32},data);
 
 g = gaussian(data);
+gm = gmm(4,data);
+
 t1 = zeros(typeof(data[1]),size(data,2));
 p = zeros(typeof(data[1]),size(data,2));
 
-mvn = MvNormal(vec(g.mean),g.cov);
-@time t1 = logpdf(mvn,data);
-@time t1 = logpdf(mvn,data);
+
 @time p = logprob(g,data);
 @time p = logprob(g,data);
