@@ -25,7 +25,6 @@ end
 
 function gmm(nmix::Integer, data::Matrix{T} where T <: AbstractFloat; method = "rand")
   if(method=="rand")
-    println("rnd")
     ndim = size(data,1);
     dcov = cov(data,2);
     dmvn = MvNormal(vec(mean(data,2)),dcov);
@@ -35,7 +34,6 @@ function gmm(nmix::Integer, data::Matrix{T} where T <: AbstractFloat; method = "
       mix[i] = gaussian(ndim,reshape(mixmean,ndim,1),dcov);
     end
   elseif(method=="kmeans")
-    println("km")
     km = kmeans(data,nmix);
     mix = Array{gaussian{eltype(data)}}(nmix);
     dcov = cov(data,2);
@@ -102,6 +100,29 @@ end
 
 logprob!(p::Array{T},g::gaussian{T},data::Matrix{T}) where T <: AbstractFloat = logpdf!(p,MvNormal(vec(g.mean),g.cov),data)
 logprob(g::gaussian{T},data::Matrix{T}) where T <: AbstractFloat = logpdf(MvNormal(vec(g.mean),g.cov),data)
+
+function logprob!(p::Array{T},gm::gmm{T},data::Matrix{T}) where T <: AbstractFloat
+  mixprob = zeros(eltype(data),size(data,2),gm.nmix);
+  for i=1:gm.nmix
+    mixprob[:,i] = logprob(gm.mix[i],data);
+  end
+  maxprob = maximum(mixprob,2);
+  broadcast!(-,mixprob,mixprob,maxprob);
+  p .= vec(log.((exp.(mixprob))*gm.wts) .+ maxprob);
+  return nothing
+end
+
+function logprob(gm::gmm{T},data::Matrix{T}) where T <: AbstractFloat
+  mixprob = zeros(eltype(data),size(data,2),gm.nmix);
+  for i=1:gm.nmix
+    mixprob[:,i] = logprob(gm.mix[i],data);
+  end
+  maxprob = maximum(mixprob,2);
+  broadcast!(-,mixprob,mixprob,maxprob);
+  return vec(log.((exp.(mixprob))*gm.wts) .+ maxprob);
+end
+
+
 
 #=
 function logprob!(p::Matrix{T},g::gaussian{T},data::Matrix{T}) where T <: AbstractFloat
