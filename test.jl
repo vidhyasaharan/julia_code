@@ -5,6 +5,17 @@ using GMMbox
 using Distributions
 #using Clustering
 
+
+ndata = convert(Array{Float32},rand(MvNormal(zeros(13),eye(13)),100));
+
+gm = gmm(4,ndata);
+
+
+
+data = rand(gm,500);
+
+
+
 fpath = "/home/vidhya/work/workspace/swb_mfcc";
 mfc_flist = filter(x->endswith(x,".mfc"),readdir(fpath));
 flist = mfc_flist;
