@@ -3,8 +3,10 @@ module GMMbox
 using Distances
 using Distributions
 using Clustering
+import Base.rand
+import Base.rand!
 
-export gaussian, logprob!, logprob, gmm
+export gaussian, logprob!, logprob, gmm, rand, rand!
 
 mutable struct gaussian{T<:AbstractFloat}
   ndim::Int64
@@ -46,6 +48,56 @@ function gmm(nmix::Integer, data::Matrix{T} where T <: AbstractFloat; method = "
   return gmm(nmix,convert(Array{eltype(data)},(1/nmix)*ones(nmix,1)),mix);
 end
 
+rand!(g::gaussian{T},data::Matrix{T}) where T <: AbstractFloat = rand!(MvNormal(vec(g.mean),g.cov),data);
+rand(g::gaussian{T},nvec::Integer) where T <: AbstractFloat = rand(MvNormal(vec(g.mean),g.cov),nvec);
+
+function rand!(gm::gmm{T},data::Matrix{T}) where T <: AbstractFloat
+  ftype = eltype(data);
+  nvec = size(data,2);
+  pmix = rand(ftype,nvec);
+  nvecmix = zeros(Int64,gm.nmix);
+  thr = zeros(ftype,1);
+  for i=1:gm.nmix
+    nvecmix[i] = sum((pmix.>=thr).&(pmix.<thr+gm.wts[i]))
+    thr += gm.wts[i];
+  end
+  if(sum(nvecmix)<nvec)
+    nvecmix[end] += nvec-sum(nvecmix);
+    println("sum of number of samples per mixture not equal to requested number of samples");
+  end
+  sindx = 1;
+  eindx = 0;
+  for i=1:gm.nmix
+    eindx += nvecmix[i];
+    data[:,sindx:eindx] = rand(gm.mix[i],nvecmix[i]);
+    sindx += nvecmix[i];
+  end
+  return nothing
+end
+
+function rand(gm::gmm{T},nvec::Integer) where T <: AbstractFloat
+  ftype = eltype(gm.wts);
+  pmix = rand(ftype,nvec);
+  nvecmix = zeros(Int64,gm.nmix);
+  thr = zeros(ftype,1);
+  for i=1:gm.nmix
+    nvecmix[i] = sum((pmix.>=thr).&(pmix.<thr+gm.wts[i]))
+    thr += gm.wts[i];
+  end
+  if(sum(nvecmix)<nvec)
+    nvecmix[end] += nvec-sum(nvecmix);
+    println("sum of number of samples per mixture not equal to requested number of samples");
+  end
+  data = zeros(ftype,gm.mix[1].ndim,sum(nvec));
+  sindx = 1;
+  eindx = 0;
+  for i=1:gm.nmix
+    eindx += nvecmix[i];
+    data[:,sindx:eindx] = rand(gm.mix[i],nvecmix[i]);
+    sindx += nvecmix[i];
+  end
+  return data
+end
 
 
 logprob!(p::Array{T},g::gaussian{T},data::Matrix{T}) where T <: AbstractFloat = logpdf!(p,MvNormal(vec(g.mean),g.cov),data)
