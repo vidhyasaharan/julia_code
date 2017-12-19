@@ -10,8 +10,8 @@ export gaussian, logprob!, logprob, gmm, rand, rand!
 
 mutable struct gaussian{T<:AbstractFloat}
   ndim::Int64
-  mean::Array{T,2}
-  cov::Array{T,2}
+  mean::AbstractArray{T,2}
+  cov::AbstractArray{T,2}
 end
 
 gaussian(ndim::Integer) = gaussian(ndim,zeros(ndim,1),eye(ndim))
@@ -19,8 +19,8 @@ gaussian(data::Matrix{T} where T<:AbstractFloat)  = gaussian(size(data,1),mean(d
 
 mutable struct gmm{T<:AbstractFloat}
   nmix::Int64
-  wts::Array{T,2}
-  mix::Array{gaussian{T}}
+  wts::AbstractArray{T,2}
+  mix::AbstractArray{gaussian{T}}
 end
 
 function gmm(nmix::Integer, data::Matrix{T} where T <: AbstractFloat; method = "rand")
