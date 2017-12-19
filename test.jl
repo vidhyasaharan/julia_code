@@ -8,7 +8,10 @@ using Distributions
 
 
 ndata = convert(Array{Float32},rand(MvNormal(zeros(13),eye(13)),100));
+g = gaussian(ndata);
 gm = gmm(4,ndata);
+
+
 data = rand(gm,5000000);
 
 
@@ -41,6 +44,6 @@ p = zeros(eltype(data),size(data,2));
 @time logprob!(p,gm,data);
 =#
 
-@time @synch for i=1:10
+@time @sync for i=1:10
   logprob!(p,gm,data);
 end
