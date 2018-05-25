@@ -23,5 +23,3 @@ for i=1:nsam
     display(plot(x=1:ndim,y=x[:,i],Geom.line,Coord.cartesian(ymin=-4, ymax=4)))
     sleep(.5)
 end
-
-x_fixed = 
