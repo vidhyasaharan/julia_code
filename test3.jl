@@ -69,7 +69,7 @@ pred_mvn = MultivariateNormal(pred_mn,pred_cv);
 
 #plotmvnSamplesTrainPoints(10,pred_mvn,trainx,trainf)
 
-pred_std = sqrt(diag(pred_cv));
+pred_std = sqrt.(diag(pred_cv));
 
 
 l1 = layer(x=x,
