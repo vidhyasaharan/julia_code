@@ -35,6 +35,7 @@ pred_cv = cv - (temp + temp')/2;
 
 pred_mvn = MultivariateNormal(pred_mn,pred_cv);
 
+#plotmvnSamplesTrainPoints(10,pred_mvn,trainx,trainf)
 
 pred_std = sqrt.(diag(pred_cv));
 
@@ -55,4 +56,5 @@ l3 = layer(x=x,
             ymin=pred_mn-pred_std,
             ymax=pred_mn+pred_std,
             Geom.ribbon);
+
 plot(l1,l2,l3)
