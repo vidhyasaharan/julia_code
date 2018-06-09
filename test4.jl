@@ -6,18 +6,6 @@ using Gadfly
 
 
 
-function PlotGPsamples1D(nsam,gp_mn,gp_cov)
-    dist = MultivariateNormal(gp_mn,gp_cov)
-    f = rand(dist,nsam);
-    layers = [layer(
-                    x=x,
-                    y=f[:,i],
-                    Geom.line) for i in 1:nsam];
-    return layers
-end
-
-
-
 x = linspace(-5,5,50);
 len = .3;
 cv = gen_covs(x,x,"squared error",len);
@@ -60,5 +48,5 @@ l3 = layer(x=x,
             Geom.ribbon);
 
 
-lyrs = PlotGPsamples1D(5,pred_mn,pred_cv);
+lyrs = PlotGPsamples1D(x,5,pred_mn,pred_cv);
 plot(l1,l2,l3,lyrs...)
