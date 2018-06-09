@@ -1,23 +1,25 @@
-push!(LOAD_PATH,"/home/vidhya/work/julia_code/")
+push!(LOAD_PATH,"C:\\julia_code")
 
 using GPbox
 using Distributions
 using Gadfly
 
 
-function plotmvnSamplesTrainPoints(nsam,dist,trainx,trainf)
+
+function PlotGPsamples1D(nsam,gp_mn,gp_cov)
+    dist = MultivariateNormal(gp_mn,gp_cov)
     f = rand(dist,nsam);
-    for i=1:nsam
-        display(plot(layer(x=trainx,y=trainf,Geom.point),layer(x=x,y=f[:,i],Geom.line),Coord.cartesian(ymin=-4, ymax=4)))
-        sleep(.5);
-    end
+    layers = [layer(
+                    x=x,
+                    y=f[:,i],
+                    Geom.line) for i in 1:nsam];
+    return layers
 end
 
 
 
-
 x = linspace(-5,5,50);
-len = .2;
+len = .3;
 cv = gen_covs(x,x,"squared error",len);
 mn = zeros(length(x));
 
@@ -33,9 +35,9 @@ pred_mn = crosscv*inv(traincv)*trainf;
 temp = crosscv*inv(traincv)*crosscv';
 pred_cv = cv - (temp + temp')/2;
 
-pred_mvn = MultivariateNormal(pred_mn,pred_cv);
 
-#plotmvnSamplesTrainPoints(10,pred_mvn,trainx,trainf)
+
+
 
 pred_std = sqrt.(diag(pred_cv));
 
@@ -57,4 +59,6 @@ l3 = layer(x=x,
             ymax=pred_mn+pred_std,
             Geom.ribbon);
 
-plot(l1,l2,l3)
+
+lyrs = PlotGPsamples1D(5,pred_mn,pred_cv);
+plot(l1,l2,l3,lyrs...)
