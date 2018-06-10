@@ -3,15 +3,21 @@ module GPbox
 using Gadfly: layer, Geom
 using Distributions
 
-export gen_covs, PlotGPsamples1D
+export PlotGPsamples1D, estGP, GPkernel, genCovs
+
+####Kernel functions####
+#Squared error kernel for scalars
+struct GPkernel
+    kernel_type::String
+    param::Dict
+end
 
 se_kernel(p::T,q::T,len::T) where T<:AbstractFloat = exp(-((p-q)/(2*len))^2);
 
-function gen_covs(x::AbstractArray{T},y::AbstractArray{T},kernel_type = "squared error",param...) where T<:AbstractFloat
-    if kernel_type == "squared error"
-        kernel = se_kernel;
-        knl_param = param[1];
-        println(kernel_type)
+function genCovs(x::AbstractArray{T},y::AbstractArray{T},gpk::GPkernel) where T<:AbstractFloat
+    if gpk.kernel_type == "squared error"
+        kernel::Function = se_kernel;
+        knl_param::T = gpk.param["len"];
     end
 
     if(x==y)
@@ -36,6 +42,21 @@ function gen_covs(x::AbstractArray{T},y::AbstractArray{T},kernel_type = "squared
     return covs
 end
 
+
+
+
+####Estimating posterior GP (mean and covarainces) given training point, test points and GP kernel####
+function estGP(test_pts::AbstractArray{T},train_pts::AbstractArray{T},train_vals::AbstractArray{T},gpk::GPkernel) where T<:AbstractFloat
+    cv = genCovs(test_pts,test_pts,gpk);
+    mn = zeros(length(test_pts));
+    traincv = genCovs(train_pts,train_pts,gpk);
+    crosscv = genCovs(test_pts,train_pts,gpk);
+    itraincv = inv(traincv);
+    gp_mn = crosscv*itraincv*train_vals;
+    temp = crosscv*itraincv*crosscv';
+    gp_cv = cv - (temp + temp')/2;  #hack for positive definite CV
+    return gp_mn, gp_cv
+end
 
 
 

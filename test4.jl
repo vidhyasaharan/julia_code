@@ -1,5 +1,6 @@
 push!(LOAD_PATH,"C:\\julia_code")
 
+
 using GPbox
 using Distributions
 using Gadfly
@@ -8,24 +9,18 @@ using Gadfly
 
 x = linspace(-5,5,50);
 len = .3;
-cv = gen_covs(x,x,"squared error",len);
-mn = zeros(length(x));
-
-mvn = MultivariateNormal(mn,cv);
-
 trainx = [-4, -1.6, -.8, 2.5, 3.9]
 trainf = [-1, -.1, .4, .2, -1.2]
 
-traincv = gen_covs(trainx,trainx,"squared error",len);
-crosscv = gen_covs(x,trainx,"squared error",len);
+gpk = GPkernel("squared error",Dict("len"=>len))
 
-pred_mn = crosscv*inv(traincv)*trainf;
-temp = crosscv*inv(traincv)*crosscv';
-pred_cv = cv - (temp + temp')/2;
-
-
+# @time t1 = gen_covs(x,x,"squared error",len);
+# @time t1 = gen_covs(x,x,"squared error",len);
+# @time t2 = genCovs(x,x,gpk);
+# @time t2 = genCovs(x,x,gpk);
 
 
+pred_mn, pred_cv = estGP(x,trainx,trainf,gpk);
 
 pred_std = sqrt.(diag(pred_cv));
 
@@ -33,13 +28,12 @@ pred_std = sqrt.(diag(pred_cv));
 l1 = layer(x=x,
             y=pred_mn,
             Geom.line,
-            style(default_color=colorant"red"));
+            Theme(default_color=colorant"violet"));
 
 l2 = layer(
             x=trainx,
             y=trainf,
             Geom.point,
-            #color="green";)
             style(default_color=colorant"green"));
 
 l3 = layer(x=x,
