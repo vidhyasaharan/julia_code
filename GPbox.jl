@@ -6,13 +6,14 @@ using Distributions
 export PlotGPsamples1D, estGP, GPkernel, genCovs
 
 ####Kernel functions####
-#Squared error kernel for scalars
 struct GPkernel
     kernel_type::String
     param::Dict
 end
 
-se_kernel(p::T,q::T,len::T) where T<:AbstractFloat = exp(-((p-q)/(2*len))^2);
+#Squared error kernel for scalars
+
+se_kernel(p::T,q::T,len::T) where T<:AbstractFloat = exp((-((p-q)/(len))^2)/2);
 
 function genCovs(x::AbstractArray{T},y::AbstractArray{T},gpk::GPkernel) where T<:AbstractFloat
     if gpk.kernel_type == "squared error"

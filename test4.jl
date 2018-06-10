@@ -13,17 +13,8 @@ trainx = [-4, -1.6, -.8, 2.5, 3.9]
 trainf = [-1, -.1, .4, .2, -1.2]
 
 gpk = GPkernel("squared error",Dict("len"=>len))
-
-# @time t1 = gen_covs(x,x,"squared error",len);
-# @time t1 = gen_covs(x,x,"squared error",len);
-# @time t2 = genCovs(x,x,gpk);
-# @time t2 = genCovs(x,x,gpk);
-
-
 pred_mn, pred_cv = estGP(x,trainx,trainf,gpk);
-
 pred_std = sqrt.(diag(pred_cv));
-
 
 l1 = layer(x=x,
             y=pred_mn,

@@ -1,90 +1,29 @@
-using Distributions
-using Gadfly
+push!(LOAD_PATH,"C:\\julia_code")
+
+const Float = Float64;
+
+using Distances
+using GPbox
 
 
-# struct se_knl
-#     len::AbstractFloat
+
+
+@inline sqvd(x::Vector{T},y::Vector{T}) where T<:Float = @views evaluate(SqEuclidean(),x,y);
+
+# @inline function sqvd(x::Vector{T},y::Vector{T}) where T<:Float
+#     temp = x-y;
+#     return temp'*temp;
 # end
 
-# function (knl::se_knl)(p::T,q::T) where T<:AbstractFloat
-#     return exp(-((p-q)/(2*knl.len))^2)
-# end
-
-# function gen_cov(x,kernel::se_knl)
-#     nsam = length(x);
-#     cv = zeros(nsam,nsam);
-#     for i=1:nsam
-#         for j=1:i
-#             cv[i,j] = kernel(x[i],x[j]);
-#             cv[j,i] = cv[i,j];
-#         end
-#     end
-#     return cv
-# end
-
-
-struct kernel_param
-    se_len::AbstractFloat
-end
-
-function kernel_param(;se_len=1)
-    kernel_param(se_len)
-end
-
-
-se_krnl(p::T,q::T,param::kernel_param) where T<:AbstractFloat = exp(-((p-q)/(2*param.se_len))^2);
-
-function gen_cv(x,kernel::Function,param::kernel_param)
-    nsam = length(x);
-    cv = zeros(nsam,nsam);
-    for i=1:nsam
-        for j=1:i
-            cv[i,j] = kernel(x[i],x[j],param);
-            cv[j,i] = cv[i,j];
-        end
-    end
-    return cv
-end
-
-
-
-se_kernel(p::T,q::T,len::T) where T<:AbstractFloat = exp(-((p-q)/(2*len))^2);
-
-function gen_se_cov(x::AbstractArray{T},len::T) where T<:AbstractFloat
-    nsam = length(x)
-    cv = zeros(nsam,nsam);
-    for i=1:nsam
-        for j=1:i
-            cv[i,j] = se_kernel(x[i],x[j],len);
-            cv[j,i] = cv[i,j];
-        end
-    end
-    return cv
-end
-
-
-function gen_covs(x::AbstractArray{T},y::AbstractArray{T},kernel_type = "squared error",param...) where T<:AbstractFloat
-    if kernel_type == "squared error"
-        kernel = se_kernel;
-        knl_param = param[1];
-    end
-
-    if(x==y)
-        nsam = length(x)
-        covs = zeros(nsam,nsam);
-        for i=1:nsam
-            for j=1:i
-                covs[i,j] = kernel(x[i],x[j],knl_param);
-                covs[j,i] = covs[i,j];
-            end
-        end
-    else
-        nx = length(x);
-        ny = length(y);
-        covs = zeros(nx,ny);
-        for i=1:nx
-            for j=1:ny
-                covs[i,j] = kernel(x[i],y[j],knl_param);
+function gen_cov(x::Matrix{T},y::Matrix{T},gpk::GPkernel) where T<:Float
+    if(gpk.kernel_type=="squared error")
+        nx = size(x,2);
+        ny = size(y,2);
+        lensq::T = (get(gpk.param,"len",1))^2;
+        covs = Array{T}(nx,ny);
+        @inbounds for i=1:nx
+            @inbounds for j=1:ny
+                covs[i,j] = sqvd(x[:,i],y[:,j]);
             end
         end
     end
@@ -92,76 +31,44 @@ function gen_covs(x::AbstractArray{T},y::AbstractArray{T},kernel_type = "squared
 end
 
 
-
-function gen_se_xcov(x,y,len::Number)
-    nx = length(x);
-    ny = length(y);
-    xcv = zeros(nx,ny);
-    for i=1:nx
-        for j=1:ny
-            xcv[i,j] = se_kernel(x[i],y[j],len);
+function sdist(x::Matrix{T},y::Matrix{T}) where T<:Float
+    nx = size(x,2);
+    ny = size(y,2);
+    sd = Array{T}(nx,ny);
+    @inbounds for i=1:nx
+        @inbounds for j=1:ny
+            sd[i,j] = sqvd(x[:,i],y[:,j]);
         end
     end
-    return xcv
+    return sd
 end
 
-function plotmvnSamples(nsam,dist)
-    f = rand(dist,nsam);
-    for i=1:nsam
-        display(plot(x=x,y=f[:,i],Geom.line,Coord.cartesian(ymin=-4, ymax=4)))
-        sleep(.5);
-    end
+# sqd(x::T,y::T) where T<:Float = (x-y)^2;
+
+# function vdist(x::Vector{T},y::Vector{T}) where T<:Float
+#     nx = length(x);
+#     ny = length(y);
+#     vd = zeros(nx,ny);
+#     for i=1:nx
+#         for j=1:ny
+#             vd[i,j] = sqd(x[i],y[j]);
+#         end
+#     end
+#     return vd
+# end
+
+temp = linspace(-5,5,5000);
+# x = reshape(x,1,length(x));
+x = Array(Float,1,length(temp));
+y = Array(Float,length(temp));
+for i in eachindex(x)
+    x[i] = temp[i];
+    y[i] = temp[i];
 end
+len = 0.3;
+gpk = GPkernel("squared error",Dict("len"=>len));
 
-
-function plotmvnSamplesTrainPoints(nsam,dist,trainx,trainf)
-    f = rand(dist,nsam);
-    for i=1:nsam
-        display(plot(layer(x=trainx,y=trainf,Geom.point),layer(x=x,y=f[:,i],Geom.line),Coord.cartesian(ymin=-4, ymax=4)))
-        sleep(.5);
-    end
-end
-
-
-x = linspace(-5,5,5000);
-len = .3;
-cv = gen_se_cov(x,len);
-mn = zeros(length(x));
-
-mvn = MultivariateNormal(mn,cv);
-plotmvnSamples(20,mvn)
-
-
-trainx = [-4, -1.6, -.8, 2.5, 3.9]
-trainf = [-1, -.1, .4, .2, -1.2]
-
-traincv = gen_se_cov(trainx,len);
-crosscv = gen_se_xcov(x,trainx,len);
-
-pred_mn = crosscv*inv(traincv)*trainf;
-temp = crosscv*inv(traincv)*crosscv';
-pred_cv = cv - (temp + temp')/2;
-
-pred_mvn = MultivariateNormal(pred_mn,pred_cv);
-
-#plotmvnSamplesTrainPoints(10,pred_mvn,trainx,trainf)
-
-pred_std = sqrt.(diag(pred_cv));
-
-
-l1 = layer(x=x,
-            y=pred_mn,
-            Geom.line,
-            style(default_color=color("red")));
-
-l2 = layer(
-            x=trainx,
-            y=trainf,
-            Geom.point,
-            style(default_color=color("green")));
-
-l3 = layer(x=x,
-            ymin=pred_mn-pred_std,
-            ymax=pred_mn+pred_std,
-            Geom.ribbon);
-plot(l1,l2,l3)
+@time tt1 = gen_cov(x,x,gpk);
+@time tt2 = genCovs(y,y,gpk);
+@time tt3 = sdist(x,x);
+@time tt4 = vdist(y,y);
