@@ -6,24 +6,27 @@ using Distances
 using GPbox
 
 
-
-
-@inline sqvd(x::Vector{T},y::Vector{T}) where T<:Float = @views evaluate(SqEuclidean(),x,y);
-
-# @inline function sqvd(x::Vector{T},y::Vector{T}) where T<:Float
-#     temp = x-y;
-#     return temp'*temp;
-# end
+function sqvd2(ndim::Int64,x::Vector{T},y::Vector{T},len_fact::T) where T<:Float64
+    # len_fact = 1/(2*len^2);
+    s::T = 0.0;
+    for i=1:ndim
+        s+=(x[i] - y[i])^2;
+    end
+    # return s
+    return exp(-s*len_fact)
+end
 
 function gen_cov(x::Matrix{T},y::Matrix{T},gpk::GPkernel) where T<:Float
-    if(gpk.kernel_type=="squared error")
+    if(gpk.kernel_type=="squared exp")
         nx = size(x,2);
         ny = size(y,2);
+        ndim::Int64 = size(x,1);
         lensq::T = (get(gpk.param,"len",1))^2;
         covs = Array{T}(nx,ny);
-        @inbounds for i=1:nx
-            @inbounds for j=1:ny
-                covs[i,j] = sqvd(x[:,i],y[:,j]);
+        for i=1:nx
+            for j=1:ny
+                # @inbounds covs[i,j] = sqvd(x[:,i],y[:,j]);
+                @inbounds covs[i,j] = sqvd2(ndim,x[:,i],y[:,j],1/(2*lensq));
             end
         end
     end
@@ -31,44 +34,11 @@ function gen_cov(x::Matrix{T},y::Matrix{T},gpk::GPkernel) where T<:Float
 end
 
 
-function sdist(x::Matrix{T},y::Matrix{T}) where T<:Float
-    nx = size(x,2);
-    ny = size(y,2);
-    sd = Array{T}(nx,ny);
-    @inbounds for i=1:nx
-        @inbounds for j=1:ny
-            sd[i,j] = sqvd(x[:,i],y[:,j]);
-        end
-    end
-    return sd
-end
-
-# sqd(x::T,y::T) where T<:Float = (x-y)^2;
-
-# function vdist(x::Vector{T},y::Vector{T}) where T<:Float
-#     nx = length(x);
-#     ny = length(y);
-#     vd = zeros(nx,ny);
-#     for i=1:nx
-#         for j=1:ny
-#             vd[i,j] = sqd(x[i],y[j]);
-#         end
-#     end
-#     return vd
-# end
-
-temp = linspace(-5,5,5000);
-# x = reshape(x,1,length(x));
-x = Array(Float,1,length(temp));
-y = Array(Float,length(temp));
-for i in eachindex(x)
-    x[i] = temp[i];
-    y[i] = temp[i];
-end
 len = 0.3;
-gpk = GPkernel("squared error",Dict("len"=>len));
+gpk = GPkernel("squared exp",Dict("len"=>len));
+r1 = rand(10,5000);
+r2 = rand(10,5000);
 
-@time tt1 = gen_cov(x,x,gpk);
-@time tt2 = genCovs(y,y,gpk);
-@time tt3 = sdist(x,x);
-@time tt4 = vdist(y,y);
+
+@time tt1 = gen_cov(r1,r2,gpk);
+@time tt2 = genCovs(r1,r2,gpk);
